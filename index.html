@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pixel Booth</title>
+    <link rel="stylesheet" href="./style.css">
+</head>
+<body>
+    <h1>PIXEL BOOTH</h1>
+    <div class="container">
+        <div class="frame">
+            <video id="video" autoplay></video>
+            <canvas id="canvas" style="display: none;"></canvas>
+            <img id="captured-image" style="display: none;" />
+        </div>
+        <button id="capture" class="capture-btn"></button>
+        <div class="buttons">
+            <button id="start" class="pixel-button start-btn">START</button>
+            <button id="menu" class="pixel-button menu-btn">MENU</button>
+            <div class="menu-options" id="menu-options">
+                <button class="pixel-button">Option 1</button>
+                <button class="pixel-button">Option 2</button>
+                <button class="pixel-button">Option 3</button>
+                <button id="flip-camera" class="pixel-button">Flip Camera</button>
+            </div>
+        </div>
+    </div>
+    <script>
+        document.getElementById('menu').addEventListener('click', function() {
+            let menuOptions = document.getElementById('menu-options');
+            menuOptions.style.display = menuOptions.style.display === 'flex' ? 'none' : 'flex';
+        });
+        
+        let currentStream;
+        let useFrontCamera = true;
+
+        function startCamera() {
+            if (currentStream) {
+                currentStream.getTracks().forEach(track => track.stop());
+            }
+            
+            const constraints = {
+                video: { facingMode: useFrontCamera ? 'user' : 'environment' }
+            };
+            
+            navigator.mediaDevices.getUserMedia(constraints)
+                .then(stream => {
+                    currentStream = stream;
+                    document.getElementById('video').srcObject = stream;
+                })
+                .catch(error => {
+                    console.error('Error accessing webcam:', error);
+                });
+        }
+
+        document.getElementById('flip-camera').addEventListener('click', function() {
+            useFrontCamera = !useFrontCamera;
+            startCamera();
+        });
+
+        document.getElementById('capture').addEventListener('click', function() {
+            let video = document.getElementById('video');
+            let canvas = document.getElementById('canvas');
+            let img = document.getElementById('captured-image');
+            
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
+            
+            img.src = canvas.toDataURL('image/png');
+            img.style.display = 'block';
+            video.style.display = 'none';
+        });
+
+        document.getElementById('start').addEventListener('click', function() {
+            let img = document.getElementById('captured-image');
+            if (img.src) {
+                let printWindow = window.open('', '_blank');
+                printWindow.document.write('<html><head><title>Print</title></head><body>');
+                printWindow.document.write('<img src="' + img.src + '" style="width:100%; max-width:600px;">');
+                printWindow.document.write('</body></html>');
+                printWindow.document.close();
+                printWindow.print();
+            } else {
+                alert('No image captured to print!');
+            }
+        });
+
+        startCamera();
+    </script>
+</body>
+</html>
